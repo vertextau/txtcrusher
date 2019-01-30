@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"io/ioutil"
+	"log"
 	"os"
 
-	"github.com/vertextau/txtcrusher/pastebin"
 	"github.com/spf13/viper"
+	"github.com/vertextau/txtcrusher/pastebin"
 )
 
 var (
