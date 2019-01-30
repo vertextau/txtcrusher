@@ -7,17 +7,19 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/vertextau/txtcrusher/pastebin"
+	"io/ioutil"
 )
 
 var (
-	createPaste  = flag.String("c", "", "Create a new paste")
-	createKey    = flag.Bool("k", false, "Create a new user key")
-	listPastes   = flag.Int("l", 0, "List pastes created by a user")
-	deletePaste  = flag.String("d", "", "Delete a paste")
-	echoInfo     = flag.Bool("i", false, "Get a user info")
-	getUserPaste = flag.String("g", "", "Get a paste created by a user")
-	grabPaste    = flag.String("p", "", "Grab a paste without a config file")
-	helpFlag     = flag.Bool("help", false, "Manual about the program")
+	createPaste    = flag.String("c", "", "Create a new paste")
+	createFromFile = flag.String("f", "", "Create a new paste with the content from input file")
+	createKey      = flag.Bool("k", false, "Create a new user key")
+	listPastes     = flag.Int("l", 0, "List pastes created by a user")
+	deletePaste    = flag.String("d", "", "Delete a paste")
+	echoInfo       = flag.Bool("i", false, "Get a user info")
+	getUserPaste   = flag.String("g", "", "Get a paste created by a user")
+	grabPaste      = flag.String("p", "", "Grab a paste without a config file")
+	helpFlag       = flag.Bool("help", false, "Manual about the program")
 
 	// flags for a new paste
 	guestFlag   = flag.Bool("guest", false, "Post under a guest")
@@ -49,11 +51,20 @@ func main() {
 	u.DeveloperKey = viper.GetString("pastebin.api_dev_key")
 	u.UserKey = viper.GetString("pastebin.api_user_key")
 
-	switch {
-	case len(*createPaste) > 0:
+	if len(*createPaste) > 0 {
 		data, err := u.CreateNewPaste(createPaste, *guestFlag, *titleFlag, *formatFlag, *expDateFlag, *modFlag)
 		checkError(err)
 		fmt.Println(*data)
+	} else if len(*createFromFile) > 0 {
+		fileData, err := ioutil.ReadFile(*createFromFile)
+		checkError(err)
+		text := string(fileData)
+		data, err := u.CreateNewPaste(&text, *guestFlag, *titleFlag, *formatFlag, *expDateFlag, *modFlag)
+		checkError(err)
+		fmt.Println(*data)
+	}
+
+	switch {
 	case *createKey:
 		data, err := u.GetUserKey(flag.Arg(0), flag.Arg(1))
 		checkError(err)
@@ -63,7 +74,6 @@ func main() {
 		if err != nil {
 			log.Fatalf("[%s] %s", *deletePaste, err)
 		}
-
 		fmt.Println(*data)
 	case *echoInfo:
 		data, err := u.GetUserInfo()
@@ -74,7 +84,6 @@ func main() {
 		if err != nil {
 			log.Fatalf("[%s] %s", *getUserPaste, err)
 		}
-
 		fmt.Println(*data)
 	case *listPastes > 0:
 		data, err := u.ListUserPastes(*listPastes)
@@ -83,7 +92,8 @@ func main() {
 	case *helpFlag:
 		flag.Usage()
 	default:
-		fmt.Println("Usage: txtcrusher [OPTION] INPUT\nTry 'txtcrusher -help' for more information.")
+		fmt.Println()
+		//fmt.Println("Usage: txtcrusher [OPTION] INPUT\nTry 'txtcrusher -help' for more information.")
 	}
 }
 
