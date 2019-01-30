@@ -4,15 +4,16 @@ import (
 	"flag"
 	"fmt"
 	"log"
-
-	"github.com/spf13/viper"
-	"github.com/vertextau/txtcrusher/pastebin"
 	"io/ioutil"
+	"os"
+
+	"github.com/vertextau/txtcrusher/pastebin"
+	"github.com/spf13/viper"
 )
 
 var (
 	createPaste    = flag.String("c", "", "Create a new paste")
-	createFromFile = flag.String("f", "", "Create a new paste with the content from input file")
+	createFromFile = flag.String("f", "", "Create a new paste with the content from an input file")
 	createKey      = flag.Bool("k", false, "Create a new user key")
 	listPastes     = flag.Int("l", 0, "List pastes created by a user")
 	deletePaste    = flag.String("d", "", "Delete a paste")
@@ -22,21 +23,33 @@ var (
 	helpFlag       = flag.Bool("help", false, "Manual about the program")
 
 	// flags for a new paste
-	guestFlag   = flag.Bool("guest", false, "Post under a guest")
-	titleFlag   = flag.String("title", "", "Title for a paste")
-	formatFlag  = flag.String("format", "Text", "Highlight format")
-	expDateFlag = flag.String("expire", "N", "Expire date for a paste")
-	modFlag     = flag.Int("mod", 0, "Modificator for a paste")
+	guestFlag   = flag.Bool("guest", false, "Create a new paste under a guest")
+	titleFlag   = flag.String("title", "", "Title for a new paste")
+	formatFlag  = flag.String("format", "Text", "Highlight format for a new paste")
+	expDateFlag = flag.String("expire", "N", "Expire date for a new paste")
+	modFlag     = flag.Int("mod", 0, "Visibility modificator for a new paste")
 )
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: txtcrusher [OPTION] INPUT\nTry 'txtcrusher -help' for more information.")
+		os.Exit(1)
+	}
+
 	flag.Parse()
+
+	if *helpFlag {
+		flag.Usage()
+		os.Exit(0)
+	}
 
 	if len(*grabPaste) > 0 {
 		data, err := pastebin.GetPaste(*grabPaste)
-		checkError(err)
+		if err != nil {
+			log.Fatalf("[%s] %s", *grabPaste, err)
+		}
 		fmt.Println(*data)
-		return
+		os.Exit(0)
 	}
 
 	viper.SetConfigName("config")
@@ -53,50 +66,61 @@ func main() {
 
 	if len(*createPaste) > 0 {
 		data, err := u.CreateNewPaste(createPaste, *guestFlag, *titleFlag, *formatFlag, *expDateFlag, *modFlag)
-		checkError(err)
+		if err != nil {
+			log.Fatalf("[%s] %s", *createPaste, err)
+		}
+
 		fmt.Println(*data)
 	} else if len(*createFromFile) > 0 {
 		fileData, err := ioutil.ReadFile(*createFromFile)
-		checkError(err)
-		text := string(fileData)
-		data, err := u.CreateNewPaste(&text, *guestFlag, *titleFlag, *formatFlag, *expDateFlag, *modFlag)
-		checkError(err)
-		fmt.Println(*data)
-	}
+		if err != nil {
+			log.Fatalf("[%s] %s", *createFromFile, err)
+		}
 
-	switch {
-	case *createKey:
+		text := string(fileData)
+
+		data, err := u.CreateNewPaste(&text, *guestFlag, *titleFlag, *formatFlag, *expDateFlag, *modFlag)
+		if err != nil {
+			log.Fatalf("[%s] %s", *createFromFile, err)
+		}
+
+		fmt.Println(*data)
+	} else if *createKey {
+		if len(flag.Args()) != 2 {
+			log.Fatal("Usage: txtcrusher -k username password")
+		}
+
 		data, err := u.GetUserKey(flag.Arg(0), flag.Arg(1))
 		checkError(err)
 		fmt.Println(*data)
-	case len(*deletePaste) > 0:
-		data, err := u.DeleteUserPaste(*deletePaste)
-		if err != nil {
-			log.Fatalf("[%s] %s", *deletePaste, err)
+	} else {
+		switch {
+		case len(*deletePaste) > 0:
+			data, err := u.DeleteUserPaste(*deletePaste)
+			if err != nil {
+				log.Fatalf("[%s] %s", *deletePaste, err)
+			}
+			fmt.Println(*data)
+
+		case *echoInfo:
+			data, err := u.GetUserInfo()
+			checkError(err)
+			fmt.Println(*data)
+
+		case len(*getUserPaste) > 0:
+			data, err := u.GetUserPaste(*getUserPaste)
+			if err != nil {
+				log.Fatalf("[%s] %s", *getUserPaste, err)
+			}
+			fmt.Println(*data)
+
+		case *listPastes > 0:
+			data, err := u.ListUserPastes(*listPastes)
+			checkError(err)
+			fmt.Println(*data)
 		}
-		fmt.Println(*data)
-	case *echoInfo:
-		data, err := u.GetUserInfo()
-		checkError(err)
-		fmt.Println(*data)
-	case len(*getUserPaste) > 0:
-		data, err := u.GetUserPaste(*getUserPaste)
-		if err != nil {
-			log.Fatalf("[%s] %s", *getUserPaste, err)
-		}
-		fmt.Println(*data)
-	case *listPastes > 0:
-		data, err := u.ListUserPastes(*listPastes)
-		checkError(err)
-		fmt.Println(*data)
-	case *helpFlag:
-		flag.Usage()
-	default:
-		fmt.Println()
-		//fmt.Println("Usage: txtcrusher [OPTION] INPUT\nTry 'txtcrusher -help' for more information.")
 	}
 }
-
 func checkError(err error) {
 	if err != nil {
 		log.Fatal(err)
