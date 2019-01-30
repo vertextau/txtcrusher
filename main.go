@@ -12,11 +12,12 @@ import (
 var (
 	createPaste  = flag.String("c", "", "Create a new paste")
 	createKey    = flag.Bool("k", false, "Create a new user key")
-	listPastes   = flag.Int("l", 50, "List pastes created by a user")
+	listPastes   = flag.Int("l", 0, "List pastes created by a user")
 	deletePaste  = flag.String("d", "", "Delete a paste")
 	echoInfo     = flag.Bool("i", false, "Get a user info")
 	getUserPaste = flag.String("g", "", "Get a paste created by a user")
 	grabPaste    = flag.String("p", "", "Grab a paste without a config file")
+	helpFlag     = flag.Bool("help", false, "Manual about the program")
 
 	// flags for a new paste
 	guestFlag   = flag.Bool("guest", false, "Post under a guest")
@@ -26,18 +27,12 @@ var (
 	modFlag     = flag.Int("mod", 0, "Modificator for a paste")
 )
 
-func chck(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func main() {
 	flag.Parse()
 
 	if len(*grabPaste) > 0 {
 		data, err := pastebin.GetPaste(*grabPaste)
-		chck(err)
+		checkError(err)
 		fmt.Println(*data)
 		return
 	}
@@ -57,27 +52,43 @@ func main() {
 	switch {
 	case len(*createPaste) > 0:
 		data, err := u.CreateNewPaste(createPaste, *guestFlag, *titleFlag, *formatFlag, *expDateFlag, *modFlag)
-		chck(err)
+		checkError(err)
 		fmt.Println(*data)
 	case *createKey:
 		data, err := u.GetUserKey(flag.Arg(0), flag.Arg(1))
-		chck(err)
+		checkError(err)
 		fmt.Println(*data)
 	case len(*deletePaste) > 0:
 		data, err := u.DeleteUserPaste(*deletePaste)
-		chck(err)
+		if err != nil {
+			log.Fatalf("[%s] %s", *deletePaste, err)
+		}
+
 		fmt.Println(*data)
 	case *echoInfo:
 		data, err := u.GetUserInfo()
-		chck(err)
+		checkError(err)
 		fmt.Println(*data)
 	case len(*getUserPaste) > 0:
 		data, err := u.GetUserPaste(*getUserPaste)
-		chck(err)
+		if err != nil {
+			log.Fatalf("[%s] %s", *getUserPaste, err)
+		}
+
 		fmt.Println(*data)
 	case *listPastes > 0:
 		data, err := u.ListUserPastes(*listPastes)
-		chck(err)
+		checkError(err)
 		fmt.Println(*data)
+	case *helpFlag:
+		flag.Usage()
+	default:
+		fmt.Println("Usage: txtcrusher [OPTION] INPUT\nTry 'txtcrusher -help' for more information.")
+	}
+}
+
+func checkError(err error) {
+	if err != nil {
+		log.Fatal(err)
 	}
 }
