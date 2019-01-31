@@ -136,7 +136,8 @@ func (p Pastebin) GetUserKey(username, password string) (*string, error) {
 }
 
 // Creates a new paste.
-func (p Pastebin) CreateNewPaste(pasteText *string, guest bool, pasteTitle, pasteFormat, expireDate string, pasteMod int) (*string, error) {
+func (p Pastebin) CreateNewPaste(pasteText *string, guest bool, pasteTitle, pasteFormat,
+				expireDate string, pasteMod int) (*string, error) {
 	v := url.Values{}
 
 	v.Set(apiDevKey, p.DeveloperKey)
