@@ -91,7 +91,10 @@ func main() {
 		}
 
 		data, err := u.GetUserKey(flag.Arg(0), flag.Arg(1))
-		checkError(err)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		fmt.Println(*data)
 	} else {
 		switch {
@@ -100,11 +103,15 @@ func main() {
 			if err != nil {
 				log.Fatalf("[%s] %s", *deletePaste, err)
 			}
+
 			fmt.Println(*data)
 
 		case *echoInfo:
 			data, err := u.GetUserInfo()
-			checkError(err)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			fmt.Println(*data)
 
 		case len(*getUserPaste) > 0:
@@ -112,17 +119,16 @@ func main() {
 			if err != nil {
 				log.Fatalf("[%s] %s", *getUserPaste, err)
 			}
+
 			fmt.Println(*data)
 
 		case *listPastes > 0:
 			data, err := u.ListUserPastes(*listPastes)
-			checkError(err)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			fmt.Println(*data)
 		}
-	}
-}
-func checkError(err error) {
-	if err != nil {
-		log.Fatal(err)
 	}
 }
