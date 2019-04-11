@@ -112,7 +112,9 @@ func main() {
 				log.Fatal(err)
 			}
 
-			fmt.Println(*data)
+			userInfo := pastebin.UnmarshalData(data)
+
+			pastebin.PrintData(userInfo)
 
 		case len(*getUserPaste) > 0:
 			data, err := u.GetUserPaste(*getUserPaste)
